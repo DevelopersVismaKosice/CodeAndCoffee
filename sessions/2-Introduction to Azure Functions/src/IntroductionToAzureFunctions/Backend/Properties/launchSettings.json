@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Backend": {
+      "commandName": "Project",
+      "commandLineArgs": "host start --pause-on-error --port 7051"
+    }
+  }
+}
