@@ -13,6 +13,7 @@ Intention of this content is to open up new areas of programming languages, know
 |--------------|----------|--------------|--------------|
 | Measure performance of your code with BenchmarkDotNet | 21 October 2019 | Michal Lukac | C#, .NET |
 | | 28 October 2019 | | |
+| Introduction to Azure Functions | 4 December 2019 | Lukas Vavrek, Matus Mihely | C#, .NET |
 
 ### Enjoy :)
 
