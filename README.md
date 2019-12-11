@@ -1,4 +1,4 @@
-![logo.png](docs/images/logo.png)
+![logo.png](docs/images/logo2.png)
 
 # by Developers at Visma Kosice
 
