@@ -1,0 +1,17 @@
+﻿@inherits CounterBase
+@page "/counter"
+
+<h2>Counter</h2>
+
+<p>Current count: @currentCount</p>
+
+<button class="btn btn-primary" @onclick="IncrementCount">Click me 3</button>
+
+@*@code {
+    private int currentCount = 0;
+
+    private void IncrementCount()
+    {
+        currentCount++;
+    }
+}*@
