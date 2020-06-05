@@ -1,0 +1,33 @@
+version: '3.4'
+
+services:
+  redis:
+    ports:
+      - '6321:6321'
+    
+  vismadocker.web:
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://0.0.0.0:5005
+      - RedisNode=http://${EXTERNAL_DNS_OR_IP}:6321
+    networks:
+      - vismadocker
+    ports:
+      - '5005:5005'
+
+  vismadocker.scraper:
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://0.0.0.0:5001
+      - RedisNode=http://${EXTERNAL_DNS_OR_IP}:6321
+    networks:
+      - vismadocker
+    ports:
+      - '5001:5001'
+
+volumes:
+  redis_data:
+
+networks: 
+  vismadocker:
+      driver: bridge
