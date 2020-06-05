@@ -5,6 +5,10 @@ VisualStudioVersion = 15.0.26124.0
 MinimumVisualStudioVersion = 15.0.26124.0
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VismaDocker.Web", "VismaDocker.Web\VismaDocker.Web.csproj", "{717728BF-35A7-44FF-926E-FA6F0C54EE40}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VismaDocker.Scraper", "VismaDocker.Scraper\VismaDocker.Scraper.csproj", "{6C56F34D-CC45-41F9-A757-AF4832CF99DA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VismaDocker.ScraperWorker", "VismaDocker.ScraperWorker\VismaDocker.ScraperWorker.csproj", "{EAE0571C-3021-4933-B2A6-8D052206FD44}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -30,5 +34,29 @@ Global
 		{717728BF-35A7-44FF-926E-FA6F0C54EE40}.Release|x64.Build.0 = Release|Any CPU
 		{717728BF-35A7-44FF-926E-FA6F0C54EE40}.Release|x86.ActiveCfg = Release|Any CPU
 		{717728BF-35A7-44FF-926E-FA6F0C54EE40}.Release|x86.Build.0 = Release|Any CPU
+		{6C56F34D-CC45-41F9-A757-AF4832CF99DA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6C56F34D-CC45-41F9-A757-AF4832CF99DA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6C56F34D-CC45-41F9-A757-AF4832CF99DA}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{6C56F34D-CC45-41F9-A757-AF4832CF99DA}.Debug|x64.Build.0 = Debug|Any CPU
+		{6C56F34D-CC45-41F9-A757-AF4832CF99DA}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{6C56F34D-CC45-41F9-A757-AF4832CF99DA}.Debug|x86.Build.0 = Debug|Any CPU
+		{6C56F34D-CC45-41F9-A757-AF4832CF99DA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6C56F34D-CC45-41F9-A757-AF4832CF99DA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6C56F34D-CC45-41F9-A757-AF4832CF99DA}.Release|x64.ActiveCfg = Release|Any CPU
+		{6C56F34D-CC45-41F9-A757-AF4832CF99DA}.Release|x64.Build.0 = Release|Any CPU
+		{6C56F34D-CC45-41F9-A757-AF4832CF99DA}.Release|x86.ActiveCfg = Release|Any CPU
+		{6C56F34D-CC45-41F9-A757-AF4832CF99DA}.Release|x86.Build.0 = Release|Any CPU
+		{EAE0571C-3021-4933-B2A6-8D052206FD44}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EAE0571C-3021-4933-B2A6-8D052206FD44}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EAE0571C-3021-4933-B2A6-8D052206FD44}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{EAE0571C-3021-4933-B2A6-8D052206FD44}.Debug|x64.Build.0 = Debug|Any CPU
+		{EAE0571C-3021-4933-B2A6-8D052206FD44}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{EAE0571C-3021-4933-B2A6-8D052206FD44}.Debug|x86.Build.0 = Debug|Any CPU
+		{EAE0571C-3021-4933-B2A6-8D052206FD44}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EAE0571C-3021-4933-B2A6-8D052206FD44}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EAE0571C-3021-4933-B2A6-8D052206FD44}.Release|x64.ActiveCfg = Release|Any CPU
+		{EAE0571C-3021-4933-B2A6-8D052206FD44}.Release|x64.Build.0 = Release|Any CPU
+		{EAE0571C-3021-4933-B2A6-8D052206FD44}.Release|x86.ActiveCfg = Release|Any CPU
+		{EAE0571C-3021-4933-B2A6-8D052206FD44}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

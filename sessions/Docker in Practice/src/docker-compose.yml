@@ -1,0 +1,44 @@
+version: '3.4'
+
+services:
+  redis:
+    image: redis:latest
+    restart: always
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    networks:
+      - vismadocker
+    
+  vismadocker.web:
+    image: ${DOCKER_HOST}visma-docker.web
+    build:
+      context: .
+      dockerfile: VismaDocker.Web/Dockerfile
+    restart: always
+    depends_on:
+      - redis
+    networks:
+      - vismadocker
+    ports:
+      - '5000:5000'
+
+  vismadocker.scraper:
+    image: ${DOCKER_HOST}visma-docker.scraper-worker
+    build:
+      context: .
+      dockerfile: VismaDocker.ScraperWorker/Dockerfile
+    restart: always
+    depends_on:
+      - redis
+    networks:
+      - vismadocker
+    ports:
+      - '5001:5001'
+
+volumes:
+  redis_data:
+
+networks: 
+  vismadocker:
+      driver: bridge

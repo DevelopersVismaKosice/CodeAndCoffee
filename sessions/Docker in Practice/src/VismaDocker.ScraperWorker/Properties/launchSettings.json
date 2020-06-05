@@ -1,0 +1,10 @@
+﻿{
+  "profiles": {
+    "VismaDocker.ScraperWorker": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Development"
+      }
+    }
+  }
+}
