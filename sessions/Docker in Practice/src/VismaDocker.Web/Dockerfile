@@ -16,5 +16,5 @@ FROM base AS final
 WORKDIR /app
 
 COPY --from=publish /app .
-# ENV ASPNETCORE_URLS="http://0.0.0.0:5000"
+#ENV ASPNETCORE_URLS="http://0.0.0.0:5000"
 ENTRYPOINT ["dotnet", "VismaDocker.Web.dll"]

@@ -2,6 +2,8 @@
 
 Session Date: June 5 2020
 
+<https://docs.docker.com/compose/>
+
 - Docker compose is included in Docker for Windows / Mac. On Linux you can download binary from Compose repository on GitHub.
 - :warning: BEWARE OF DOCKER COMPOSE FILE INDENTATION
 - Docker compose version is tied to support from Docker engine, so check your Docker engine in order to determine Docker compose file format.
@@ -9,7 +11,7 @@ Session Date: June 5 2020
    a) By default, Compose reads two files, a docker-compose.yml and an optional docker-compose.override.yml file
    b) By convention, the docker-compose.yml contains your base configuration
    c) To use multiple override files, or an override file with a different name, you can use the -f option to specify the list of files
-   `docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d`
+   `docker-compose -f docker-compose.yml -f docker-compose.override.temp.yml up -d`
 - Compose supports declaring default environment variables in an environment file named `.env` placed in the folder where the docker-compose command is executed
 - The environment variables you define here are used for variable substitution in your Compose file, and can also be used to define the following CLI variables:
 
@@ -51,20 +53,6 @@ Docker’s networking subsystem is pluggable, using drivers. Several drivers exi
 4) Run 'dotnet sln add VismaDocker.ScraperWorker' in the location with solution file to add project to the solution
 5) Build Dockerfile using command `docker build -t visma-docker.scraper-worker .`
 6) Run `docker-compose up`
-
-## Docker compose reference
-
-<https://docs.docker.com/compose/>
-
-Compose is a tool for defining and running multi-container Docker applications.
-
-1) The FROM instruction initializes a new build stage and sets the Base Image for subsequent instructions. As such, a valid Dockerfile must start with a FROM instruction.
-2) The WORKDIR instruction sets the working directory
-3) The EXPOSE instruction informs Docker that the container listens on the specified network ports at runtime
-4) The RUN instruction will execute any commands in a new layer on top of the current image and commit the results. The resulting committed image will be used for the next step in the Dockerfile.
-5) The ENV instruction sets the environment variable
-6) An ENTRYPOINT allows you to configure a container that will run as an executable.
-Only the last ENTRYPOINT instruction in the Dockerfile will have an effect.
 
 ## :warning: Lessons from last session
 
