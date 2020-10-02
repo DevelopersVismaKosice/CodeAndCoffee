@@ -16,7 +16,7 @@ Intention of this content is to open up new areas of programming languages, know
 | [Blazor](https://github.com/DevelopersVismaKosice/CodeAndCoffee/tree/master/sessions/3-Blazor) | 11 December 2019 | Stefan Panko | Blazor, WebAssemply, C#, .NET
 | Angular Interceptors | 27 Debruary 2020 | Erik Hric | Angular Interceptors
 | visma-slovakia.sk | 3 December 2020 | Tomas Blanarik | Introduction to visma-slovakia.sk
-| Kanban | 26 March 2020 | Tomas Lojka | Kanban - Being healthy lean
+| [Kanban](https://github.com/DevelopersVismaKosice/CodeAndCoffee/blob/master/sessions/6-Kanban/Kanban.pdf) | 26 March 2020 | Tomas Lojka | Kanban - Being healthy lean
 | Introduction to Docker | 24 April 2020 | Michal Lukac | Theoretical introduction to Docker
 | [Docker in practice - setup & usage](https://github.com/DevelopersVismaKosice/CodeAndCoffee/blob/master/sessions/Docker%20in%20Practice/README.Session-June-5-2020.md) | 29 May 2020 | Michal Lukac | Setting up Docker for your projectm Dockerfile
 | [Docker in practice - docker compose](https://github.com/DevelopersVismaKosice/CodeAndCoffee/blob/master/sessions/Docker%20in%20Practice/README.Session-June-5-2020.md) | 6 June 2020 | Michal Lukac | Docker compose practically
