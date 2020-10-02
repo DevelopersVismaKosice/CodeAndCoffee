@@ -11,7 +11,7 @@ Intention of this content is to open up new areas of programming languages, know
 
 | Session | Date | Presenter | for |
 |--------------|----------|--------------|--------------|
-| [Measure performance of your code with BenchmarkDotNet](sessions/1-Measure performance of your code with BenchmarkDotNet/README.MD) | 21 October 2019 | Michal Lukac | C#, .NET |
+| [Measure performance of your code with BenchmarkDotNet](https://github.com/DevelopersVismaKosice/CodeAndCoffee/tree/master/sessions/1-Measure%20performance%20of%20your%20code%20with%20BenchmarkDotNet) | 21 October 2019 | Michal Lukac | C#, .NET |
 | Introduction to Azure Functions | 4 December 2019 | Lukas Vavrek, Matus Mihely | C#, .NET, Azure Functions 
 | Blazor | 11 December 2019 | Stefan Panko | Blazor, WebAssemply, C#, .NET
 | Angular Interceptors | 27 Debruary 2020 | Erik Hric | Angular Interceptors
