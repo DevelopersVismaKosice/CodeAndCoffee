@@ -20,6 +20,7 @@ Intention of this content is to open up new areas of programming languages, know
 | [Introduction to Docker](https://github.com/DevelopersVismaKosice/CodeAndCoffee/blob/master/sessions/7-Docker%20in%20Practice/Introduction%20to%20Docker.pdf) | 24 April 2020 | Michal Lukac | Theoretical introduction to Docker
 | [Docker in practice - setup & usage](https://github.com/DevelopersVismaKosice/CodeAndCoffee/blob/master/sessions/Docker%20in%20Practice/README.Session-June-5-2020.md) | 29 May 2020 | Michal Lukac | Setting up Docker for your projectm Dockerfile
 | [Docker in practice - docker compose](https://github.com/DevelopersVismaKosice/CodeAndCoffee/blob/master/sessions/Docker%20in%20Practice/README.Session-June-5-2020.md) | 6 June 2020 | Michal Lukac | Docker compose practically
+| [Kubernetes](https://github.com/DevelopersVismaKosice/CodeAndCoffee/blob/master/sessions/8-Kubernetes/README.md) | 8 October 2020 | Tomas Blanarik | Introduction to kubernetes
 
 ### Enjoy :)
 
