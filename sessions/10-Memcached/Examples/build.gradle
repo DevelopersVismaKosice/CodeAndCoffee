@@ -1,0 +1,30 @@
+plugins {
+    id 'java'
+}
+
+group 'com.visma.codecoffee'
+version '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
+}
+
+dependencies {
+    testImplementation 'net.spy:spymemcached:2.12.3'
+    // logging
+    testImplementation 'org.slf4j:slf4j-api:1.7.30'
+    testImplementation 'ch.qos.logback:logback-classic:1.2.3'
+    testImplementation 'ch.qos.logback:logback-core:1.2.3'
+    // JUnit
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.7.0'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.7.0'
+}
+
+test {
+    useJUnitPlatform()
+}
