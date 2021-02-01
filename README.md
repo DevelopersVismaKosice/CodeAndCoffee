@@ -23,6 +23,8 @@ Intention of this content is to open up new areas of programming languages, know
 | [Kubernetes](https://github.com/DevelopersVismaKosice/CodeAndCoffee/blob/master/sessions/8-Kubernetes/README.md) | 8 Oct 2020 | Tomas Blanarik |
 | [RabbitMQ vs Azure Queues](https://github.com/DevelopersVismaKosice/CodeAndCoffee/tree/master/sessions/9-RabbitMQ%20vs%20Azure%20Queues) | 19 Oct 2020 | Arpad Restei |
 | [Memcached](https://github.com/DevelopersVismaKosice/CodeAndCoffee/tree/master/sessions/10-Memcached) | 13 Nov 2020 | Peter Cirbes |
+| [.NET 5](https://github.com/DevelopersVismaKosice/CodeAndCoffee/tree/master/sessions/11-Dotnet5) | 30 Nov 2020 | Stefan Panko |
+| [Did you know? C# Interactive](https://github.com/DevelopersVismaKosice/CodeAndCoffee/tree/master/sessions/12-Did%20you%20know%20-%20C%23/src) | 29 Jan 2021 | Michal Lukac |
 
 ### Enjoy :)
 
