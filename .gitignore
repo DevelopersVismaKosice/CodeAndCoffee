@@ -2,3 +2,4 @@ bin
 obj
 BenchmarkDotNet.Artifacts
 /sessions/preparations
+.DS_Store
