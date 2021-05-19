@@ -26,6 +26,8 @@ Intention of this content is to open up new areas of programming languages, know
 | [.NET 5](https://github.com/DevelopersVismaKosice/CodeAndCoffee/tree/master/sessions/11-Dotnet5) | 30 Nov 2020 | Stefan Panko |
 | [Did you know? C# Interactive](https://github.com/DevelopersVismaKosice/CodeAndCoffee/tree/master/sessions/12-Did%20you%20know%20-%20C%23/src) | 29 Jan 2021 | Michal Lukac |
 | [Vue 3 overview](https://github.com/DevelopersVismaKosice/CodeAndCoffee/tree/master/sessions/13-Vue%203%20Overview/) | 12 Feb 2021 | Matúš Makatura |
+| [Did you know? C# Interactive #2](https://github.com/DevelopersVismaKosice/CodeAndCoffee/tree/master/sessions/14-Did%20you%20know%20#2%20-%20C%23/src) | 29 Jan 2021 | Michal Lukac |
+| [IasC - Terraform (vs. CloudFormation vs. ARM)](https://github.com/DevelopersVismaKosice/CodeAndCoffee/tree/master/sessions/15-IasC-Terraform-CloudFormation-Arm/) | 14 May | Lubos Olejar |
 
 ### Enjoy :)
 
