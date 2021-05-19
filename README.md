@@ -7,6 +7,11 @@ Code and Coffee mini sessions are here to boost that enthusiastic programmer ins
 Welcome to repository containing all Coffee and Code mini sessions source codes and information.
 Intention of this content is to open up new areas of programming languages, knowledge, tools, libraries and other interesting and hopefully useful content to Visma Developers at Kosice, Slovakia, but also to anyone else that could find it useful.
 
+## Recordings of sessions
+
+All Visma employees are able to also view the recordings [here](https://drive.google.com/drive/u/1/folders/0ByFmB7T5OLmGfnpHcm50WTZYaGRYcGJrZDJMSGdRNmxkUDUwal81VDQxb2xHSzlpLVZzazQ) :).
+For relaxed environment for presenters we decided we will not be releasing recordings to general public.
+
 ## Sessions
 
 | Session | Date | Presenter |
