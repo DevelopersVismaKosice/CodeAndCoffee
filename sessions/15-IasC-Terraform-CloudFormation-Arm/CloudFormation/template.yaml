@@ -1,0 +1,1567 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  MIDDLEWARE REST API for XXX App
+  
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+  Api:
+    OpenApiVersion: 3.0.1
+  Function:
+    Timeout: 30
+    Runtime: nodejs12.x
+    MemorySize: 512
+    Environment:
+      Variables:
+        APP_STAGE: !Ref Stage
+
+Parameters:
+  Stage:
+    Type: String
+    Default: dev
+  CognitoPool:
+    Type: String
+    Default: arn:aws:cognito-idp:eu-central-1:iii:userpool/eu-central-eee
+  ResourceVersion:
+    Type: String
+    Default: '1.0.1'
+  WAFv2ACL:
+    Type: String
+    Default: arn:aws:wafv2:eu-central-1:iii:regional/webacl/xxx-app-dev-waf-apigw/eee
+
+Resources:
+  MiddlewareRestAPI:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: !Ref Stage
+      Cors: # necessary only for endpoints accessible from UI
+        AllowMethods: "'POST, GET, HEAD, OPTIONS, PUT, DELETE'"
+        AllowHeaders: "'X-Forwarded-For,Authorization,Content-Type,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
+        AllowOrigin: "'*'"
+        MaxAge: "'600'"
+      Auth:
+        AddDefaultAuthorizerToCorsPreflight: false
+        Authorizers:
+          CognitoRolesCustomAuthorizer:
+            FunctionArn: !GetAtt MiddlewareCognitoRolesAuthorizerFunction.Arn
+            Identity:
+              Header: Authorization
+#          MyAuthorizer:
+#            UserPoolArn: !Ref CognitoPool
+#            Identity:
+#              Header: Authorization
+#              ReauthorizeEvery: 600 
+#        DefaultAuthorizer: MyAuthorizer
+        DefaultAuthorizer: CognitoRolesCustomAuthorizer
+      Tags:
+        App: xxx
+  WAFACL:
+    Type: AWS::WAFv2::WebACLAssociation
+    Properties: 
+      ResourceArn: !Sub arn:aws:apigateway:${AWS::Region}::/restapis/${MiddlewareRestAPI}/stages/${Stage}
+      WebACLArn: !Ref WAFv2ACL
+    DependsOn: MiddlewareRestAPIStage
+  GatewayResponseDefault4XX:
+    Type: 'AWS::ApiGateway::GatewayResponse'
+    Properties:
+      ResponseParameters:
+        gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+        gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+        gatewayresponse.header.Access-Control-Allow-Methods: "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'"
+      ResponseType: DEFAULT_4XX
+      ResponseTemplates:
+        application/json: "{\"error\": $context.error.messageString}"
+      RestApiId:
+        Ref: MiddlewareRestAPI
+  GatewayResponseAuthorizerFailure:
+    Type: 'AWS::ApiGateway::GatewayResponse'
+    Properties:
+      ResponseParameters:
+        gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+        gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+        gatewayresponse.header.Access-Control-Allow-Methods: "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'"
+      ResponseType: AUTHORIZER_FAILURE
+      ResponseTemplates:
+        application/json: "{\"error\": $context.error.messageString}"
+      RestApiId:
+        Ref: MiddlewareRestAPI
+  GatewayResponseDefault5XX:
+    Type: 'AWS::ApiGateway::GatewayResponse'
+    Properties:
+      ResponseParameters:
+        gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+        gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+        gatewayresponse.header.Access-Control-Allow-Methods: "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'"
+      ResponseType: DEFAULT_5XX
+      ResponseTemplates:
+        application/json: "{\"error\": $context.error.messageString}"
+      RestApiId:
+        Ref: MiddlewareRestAPI
+  xxxAppSuperadminRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      RoleName: !Sub "xxx-app-${Stage}-superadmin-role"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement: 
+          - Effect: Allow
+            Principal: 
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: xxxSuperadminPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              Effect: Allow
+              Action: 
+                - execute-api:Invoke
+              Resource:
+                - !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:*/${Stage}/*/administration/clients*" 
+        - PolicyName: xxxUserPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              Effect: Allow
+              Action: 
+                - execute-api:Invoke
+              Resource:
+                - !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:*/${Stage}/*/manual-stats/*"
+                - !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:*/${Stage}/*/settings"
+                - !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:*/${Stage}/*/app-settings"
+                - !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:*/${Stage}/*/app-settings/*"
+                - !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:*/${Stage}/*/stats-detail/*"
+                - !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:*/${Stage}/*/team-detail/*"
+                - !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:*/${Stage}/*/teams-stats"
+                - !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:*/${Stage}/*/team-jira-sprints"
+      Tags:
+        - Key: App
+          Value: xxx
+  xxxAppAdminRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      RoleName: !Sub "xxx-app-${Stage}-admin-role"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement: 
+          - Effect: Allow
+            Principal: 
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: xxxAdminPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              Effect: Allow
+              Action: 
+                - execute-api:Invoke
+              Resource:
+                - !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:*/${Stage}/*/administration/teams*" 
+                - !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:*/${Stage}/*/administration/rules*"
+        - PolicyName: xxxUserPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              Effect: Allow
+              Action: 
+                - execute-api:Invoke
+              Resource:
+                - !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:*/${Stage}/*/manual-stats/*"
+                - !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:*/${Stage}/*/settings"
+                - !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:*/${Stage}/*/app-settings"
+                - !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:*/${Stage}/*/app-settings/*"
+                - !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:*/${Stage}/*/stats-detail/*"
+                - !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:*/${Stage}/*/team-detail/*"
+                - !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:*/${Stage}/*/teams-stats"
+                - !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:*/${Stage}/*/team-jira-sprints"
+      Tags:
+        - Key: App
+          Value: xxx
+  xxxAppUserRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      RoleName: !Sub "xxx-app-${Stage}-user-role"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement: 
+          - Effect: Allow
+            Principal: 
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: xxxUserPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              Effect: Allow
+              Action: 
+                - execute-api:Invoke
+              Resource:
+                - !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:*/${Stage}/*/manual-stats/*"
+                - !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:*/${Stage}/*/settings"
+                - !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:*/${Stage}/*/app-settings"
+                - !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:*/${Stage}/*/app-settings/*"
+                - !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:*/${Stage}/*/stats-detail/*"
+                - !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:*/${Stage}/*/team-detail/*"
+                - !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:*/${Stage}/*/teams-stats"
+                - !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:*/${Stage}/*/team-jira-sprints"
+      Tags:
+        - Key: App
+          Value: xxx
+  MiddlewareApiLambdaRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      RoleName: !Sub ${AWS::StackName}-api-lambda-role
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement: 
+          - Effect: Allow
+            Principal: 
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: DynamoReadPolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              Effect: Allow
+              Action: 
+                - dynamodb:BatchGetItem
+                - dynamodb:GetItem
+                - dynamodb:Query
+                - dynamodb:Scan
+              Resource:
+                - !Sub "arn:aws:dynamodb:*:*:table/xxx-${Stage}-clients"
+                - !Sub "arn:aws:dynamodb:*:*:table/xxx-${Stage}-app-settings" 
+                - !Sub "arn:aws:dynamodb:*:*:table/xxx-${Stage}-*-teams"
+                - !Sub "arn:aws:dynamodb:*:*:table/xxx-${Stage}-*-manual-stats"
+        - PolicyName: ParameterStoreReadPolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              Effect: Allow
+              Action: 
+                - ssm:GetParameter
+                - ssm:GetParameters
+                - ssm:GetParametersByPath
+              Resource:
+                - !Sub "arn:aws:ssm:*:*:parameter/xxx-app-${Stage}/*" 
+      Tags:
+        - Key: App
+          Value: xxx
+  MiddlewareManualStatsApiLambdaRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      RoleName: !Sub ${AWS::StackName}-manual-stats-api-role
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement: 
+          - Effect: Allow
+            Principal: 
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: DynamoReadPolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              Effect: Allow
+              Action: 
+                - dynamodb:BatchGetItem
+                - dynamodb:GetItem
+                - dynamodb:Query
+                - dynamodb:Scan
+              Resource:
+                - !Sub "arn:aws:dynamodb:*:*:table/xxx-${Stage}-clients" 
+                - !Sub "arn:aws:dynamodb:*:*:table/xxx-${Stage}-*-teams"
+                - !Sub "arn:aws:dynamodb:*:*:table/xxx-${Stage}-*-manual-stats"
+        - PolicyName: DynamoWritePolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              Effect: Allow
+              Action: 
+                - dynamodb:BatchWriteItem
+                - dynamodb:PutItem
+                - dynamodb:DeleteItem
+                - dynamodb:UpdateItem
+              Resource:
+                - !Sub "arn:aws:dynamodb:*:*:table/xxx-${Stage}-*-manual-stats"
+        - PolicyName: ParameterStoreReadPolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              Effect: Allow
+              Action: 
+                - ssm:GetParameter
+                - ssm:GetParameters
+                - ssm:GetParametersByPath
+              Resource:
+                - !Sub "arn:aws:ssm:*:*:parameter/xxx-app-${Stage}/*" 
+      Tags:
+        - Key: App
+          Value: xxx
+  MiddlewareAdminApiLambdaRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      RoleName: !Sub ${AWS::StackName}-admin-api-lambda-role
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement: 
+          - Effect: Allow
+            Principal: 
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: DynamoListTablesPolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              Effect: Allow
+              Action: 
+                - dynamodb:ListTables
+              Resource:
+                - "arn:aws:dynamodb:*:*:table/*" 
+        - PolicyName: DynamoReadWritePolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              Effect: Allow
+              Action: 
+                - dynamodb:BatchGetItem
+                - dynamodb:GetItem
+                - dynamodb:BatchWriteItem
+                - dynamodb:PutItem
+                - dynamodb:DeleteItem
+                - dynamodb:UpdateItem
+                - dynamodb:Query
+                - dynamodb:Scan
+                - dynamodb:CreateTable
+                - dynamodb:DescribeTable
+                - dynamodb:UpdateTable
+                - dynamodb:DeleteTable
+              Resource:
+                - !Sub "arn:aws:dynamodb:*:*:table/xxx-${Stage}-*" 
+        - PolicyName: EventListRulesPolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              Effect: Allow
+              Action: 
+                - events:ListRules
+              Resource:
+                - 'arn:aws:events:*:*:rule/*' 
+        - PolicyName: EventBridgeReadWritePolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              Effect: Allow
+              Action: 
+                - events:PutRule
+                - events:PutTargets
+                - events:EnableRule
+                - events:DisableRule
+                - events:DeleteRule
+                - events:RemoveTargets
+                - events:ListTargetsByRule
+              Resource:
+                - !Sub "arn:aws:events:*:*:rule/xxx-${Stage}-*" 
+        - PolicyName: LambdaPermissionsPolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              Effect: Allow
+              Action: 
+                - lambda:GetFunction
+                - lambda:AddPermission
+                - lambda:RemovePermission
+              Resource:
+                - !Sub "arn:aws:lambda:*:*:function:xxx-*-${Stage}-*" 
+        - PolicyName: LambdaEventSourceMappingsPolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              Effect: Allow
+              Action:
+                - lambda:CreateEventSourceMapping
+                - lambda:GetEventSourceMapping
+                - lambda:UpdateEventSourceMapping
+                - lambda:DeleteEventSourceMapping
+                - lambda:ListEventSourceMappings
+              Resource: '*'
+        - PolicyName: DynamoStreamPolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              Effect: Allow
+              Action:
+                - dynamodb:DescribeStream
+                - dynamodb:GetRecords
+                - dynamodb:GetShardIterator
+                - dynamodb:ListStreams
+              Resource:
+                - !Sub "arn:aws:dynamodb:*:*:table/xxx-${Stage}-*"
+        - PolicyName: ParameterStoreReadWritePolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              Effect: Allow
+              Action: 
+                - ssm:GetParameter
+                - ssm:GetParameters
+                - ssm:GetParametersByPath
+                - ssm:PutParameter
+                - ssm:DeleteParameter
+                - ssm:DeleteParameters
+              Resource:
+                - !Sub "arn:aws:ssm:*:*:parameter/xxx-app-${Stage}/*" 
+      Tags:
+        - Key: App
+          Value: xxx
+  CognitoAuthorizerLambdaRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      RoleName: !Sub ${AWS::StackName}-cognito-authorizer-lambda-role
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement: 
+          - Effect: Allow
+            Principal: 
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: CognitoUserPoolPolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              Effect: Allow
+              Action: 
+                - cognito-idp:AdminGetUser
+              Resource:
+                - !Ref CognitoPool 
+        - PolicyName: IAMRolesPolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              Effect: Allow
+              Action: 
+                - iam:ListRolePolicies
+                - iam:GetRolePolicy
+              Resource:
+                - !Sub "arn:aws:iam::*:role/xxx-app-${Stage}-*"
+        - PolicyName: ParameterStoreReadPolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              Effect: Allow
+              Action: 
+                - ssm:GetParameter
+                - ssm:GetParameters
+                - ssm:GetParametersByPath
+              Resource:
+                - !Sub "arn:aws:ssm:*:*:parameter/xxx-app-${Stage}/*" 
+      Tags:
+        - Key: App
+          Value: xxx
+  MiddlewareCognitoRolesAuthorizerFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-cognito-roles-authorizer"
+      CodeUri: ./
+      Handler: authorizer-handlers.cognitoRolesAuthorizer
+      Role: !GetAtt CognitoAuthorizerLambdaRole.Arn
+      Tags:
+        App: xxx
+  MiddlewareManualStatsGetFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-manual-stats-get"
+      CodeUri: ./
+      Handler: api-handlers.manualStatsGet
+      Role: !GetAtt MiddlewareApiLambdaRole.Arn
+      Events:
+        ManualStatsGet:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /manual-stats/{statisticType}/items
+            Method: get
+            RestApiId:
+              Ref: MiddlewareRestAPI
+      Tags:
+        App: xxx
+  MiddlewareManualStatsPutFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-manual-stats-put"
+      CodeUri: ./
+      Handler: api-handlers.manualStatsPut
+      Role: !GetAtt MiddlewareManualStatsApiLambdaRole.Arn
+      Events:
+        ManualStatsPut:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /manual-stats/{statisticType}/items
+            Method: put
+            RestApiId:
+              Ref: MiddlewareRestAPI
+      Tags:
+        App: xxx
+  MiddlewareManualStatsDeleteFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-manual-stats-delete"
+      CodeUri: ./
+      Handler: api-handlers.manualStatsDelete
+      Role: !GetAtt MiddlewareManualStatsApiLambdaRole.Arn
+      Events:
+        ManualStatsDelete:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /manual-stats/{statisticType}/items
+            Method: delete
+            RestApiId:
+              Ref: MiddlewareRestAPI
+      Tags:
+        App: xxx
+  MiddlewareManualStatsBacklogHealthFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-manual-stats-backlog-health"
+      CodeUri: ./
+      Handler: api-handlers.manualStatsBacklogHealth
+      Role: !GetAtt MiddlewareApiLambdaRole.Arn
+      Events:
+        ManualStatsBacklogHealth:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /team-detail/backlog-health
+            Method: get
+            RestApiId:
+              Ref: MiddlewareRestAPI
+      Tags:
+        App: xxx
+  MiddlewareManualStatsHappinessTrackingFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-manual-stats-happiness-tracking"
+      CodeUri: ./
+      Handler: api-handlers.manualStatsHappinessTracking
+      Role: !GetAtt MiddlewareApiLambdaRole.Arn
+      Events:
+        ManualStatsHappinessTracking:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /team-detail/happiness-tracking
+            Method: get
+            RestApiId:
+              Ref: MiddlewareRestAPI
+      Tags:
+        App: xxx
+  MiddlewareManualStatsHappinessTrackingDetailFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-manual-stats-happiness-tracking-det"
+      CodeUri: ./
+      Handler: api-handlers.manualStatsHappinessTrackingDetail
+      Role: !GetAtt MiddlewareApiLambdaRole.Arn
+      Events:
+        ManualStatsHappinessTracking:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /team-detail/happiness-tracking-detail
+            Method: get
+            RestApiId:
+              Ref: MiddlewareRestAPI
+      Tags:
+        App: xxx
+  MiddlewareTeamDetailGithubSprintsFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-team-detail-github-sprints"
+      CodeUri: ./
+      Handler: api-handlers.teamDetailGithubSprints
+      Role: !GetAtt MiddlewareApiLambdaRole.Arn
+      Events:
+        TeamDetailGithubSprints:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /team-detail/github
+            Method: get
+            RestApiId:
+              Ref: MiddlewareRestAPI
+      Tags:
+        App: xxx
+  MiddlewareTeamDetailGithubWeeklyFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-team-detail-github-weekly"
+      CodeUri: ./
+      Handler: api-handlers.teamDetailGithubWeekly
+      Role: !GetAtt MiddlewareApiLambdaRole.Arn
+      Events:
+        TeamDetailGithubWeekly:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /team-detail/github/weekly
+            Method: get
+            RestApiId:
+              Ref: MiddlewareRestAPI
+      Tags:
+        App: xxx
+  MiddlewareClientSettingsFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-settings"
+      CodeUri: ./
+      Handler: api-handlers.settings
+      Role: !GetAtt MiddlewareApiLambdaRole.Arn
+      Events:
+        Settings:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /settings
+            Method: get
+            RestApiId:
+              Ref: MiddlewareRestAPI
+      Tags:
+        App: xxx
+  MiddlewareApplicationSettingsFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-app-settings"
+      CodeUri: ./
+      Handler: api-handlers.appSettings
+      Role: !GetAtt MiddlewareApiLambdaRole.Arn
+      Events:
+        GetAppSettings:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /app-settings/{settingKey}
+            Method: get
+            RestApiId:
+              Ref: MiddlewareRestAPI
+        ListAppSettings:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /app-settings
+            Method: get
+            RestApiId:
+              Ref: MiddlewareRestAPI
+      Tags:
+        App: xxx
+  MiddlewareSuperAdminClientsFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-super-admin-clients"
+      CodeUri: ./
+      Handler: api-handlers.superAdminClients
+      Role: !GetAtt MiddlewareAdminApiLambdaRole.Arn
+      Timeout: 120
+      Events:
+        ClientsGet:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /administration/clients
+            Method: get
+            RestApiId:
+              Ref: MiddlewareRestAPI
+        ClientGet:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /administration/clients/{clientId}
+            Method: get
+            RestApiId:
+              Ref: MiddlewareRestAPI
+        ClientGetStatus:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /administration/clients/{clientId}/status
+            Method: get
+            RestApiId:
+              Ref: MiddlewareRestAPI
+        ClientPut:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /administration/clients/{clientId}
+            Method: put
+            RestApiId:
+              Ref: MiddlewareRestAPI
+        ClientDelete:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /administration/clients/{clientId}
+            Method: delete
+            RestApiId:
+              Ref: MiddlewareRestAPI
+      Tags:
+        App: xxx
+  MiddlewareSuperAdminTeamsFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-super-admin-teams"
+      CodeUri: ./
+      Handler: api-handlers.superAdminTeams
+      Role: !GetAtt MiddlewareAdminApiLambdaRole.Arn
+      Events:
+        TeamsGet:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /administration/clients/{clientId}/teams
+            Method: get
+            RestApiId:
+              Ref: MiddlewareRestAPI
+        TeamGet:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /administration/clients/{clientId}/teams/{teamId}
+            Method: get
+            RestApiId:
+              Ref: MiddlewareRestAPI
+        TeamPut:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /administration/clients/{clientId}/teams/{teamId}
+            Method: put
+            RestApiId:
+              Ref: MiddlewareRestAPI
+        TeamsPost:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /administration/clients/{clientId}/teams/batchUpdate
+            Method: post
+            RestApiId:
+              Ref: MiddlewareRestAPI
+        TeamDelete:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /administration/clients/{clientId}/teams/{teamId}
+            Method: delete
+            RestApiId:
+              Ref: MiddlewareRestAPI
+        InvalidateTeamMember:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /administration/clients/{clientId}/teams/{teamId}/members/{memberId}/invalidate
+            Method: put
+            RestApiId:
+              Ref: MiddlewareRestAPI
+      Tags:
+        App: xxx
+  MiddlewareSuperAdminClientRulesFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-super-admin-client-rules"
+      CodeUri: ./
+      Handler: api-handlers.superAdminClientRules
+      Role: !GetAtt MiddlewareAdminApiLambdaRole.Arn
+      Timeout: 120
+      Events:
+        RulesGet:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /administration/clients/{clientId}/rules
+            Method: get
+            RestApiId:
+              Ref: MiddlewareRestAPI
+        RuleGet:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /administration/clients/{clientId}/rules/{source}/{type}
+            Method: get
+            RestApiId:
+              Ref: MiddlewareRestAPI
+        RuleEnable:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /administration/clients/{clientId}/rules/{source}/{type}/enable/{enableValue}
+            Method: put
+            RestApiId:
+              Ref: MiddlewareRestAPI
+        RuleEnableAll:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /administration/clients/{clientId}/rules/{source}/enable/{enableValue}
+            Method: put
+            RestApiId:
+              Ref: MiddlewareRestAPI
+        RuleDelete:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /administration/clients/{clientId}/rules/{source}/{type}
+            Method: delete
+            RestApiId:
+              Ref: MiddlewareRestAPI
+        RuleDeleteAll:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /administration/clients/{clientId}/rules/{source}
+            Method: delete
+            RestApiId:
+              Ref: MiddlewareRestAPI
+        RulePut:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /administration/clients/{clientId}/rules/{source}/{type}
+            Method: put
+            RestApiId:
+              Ref: MiddlewareRestAPI
+        RulePutAll:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /administration/clients/{clientId}/rules/{source}
+            Method: put
+            RestApiId:
+              Ref: MiddlewareRestAPI
+      Tags:
+        App: xxx
+  MiddlewareSuperAdminClientTablesFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-super-admin-client-tables"
+      CodeUri: ./
+      Handler: api-handlers.superAdminClientTables
+      Role: !GetAtt MiddlewareAdminApiLambdaRole.Arn
+      Timeout: 120
+      Events:
+        TablePut:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /administration/clients/{clientId}/tables/{tableName}
+            Method: put
+            RestApiId:
+              Ref: MiddlewareRestAPI
+        TableDelete:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /administration/clients/{clientId}/tables/{tableName}
+            Method: delete
+            RestApiId:
+              Ref: MiddlewareRestAPI
+        TablesGet:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /administration/clients/{clientId}/tables
+            Method: get
+            RestApiId:
+              Ref: MiddlewareRestAPI
+      Tags:
+        App: xxx
+  MiddlewareAdminTeamsFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-admin-teams"
+      CodeUri: ./
+      Handler: api-handlers.adminTeams
+      Role: !GetAtt MiddlewareAdminApiLambdaRole.Arn
+      Events:
+        AdminTeamsGet:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /administration/teams
+            Method: get
+            RestApiId:
+              Ref: MiddlewareRestAPI
+        AdminTeamGet:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /administration/teams/{teamId}
+            Method: get
+            RestApiId:
+              Ref: MiddlewareRestAPI
+        AdminTeamPut:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /administration/teams/{teamId}
+            Method: put
+            RestApiId:
+              Ref: MiddlewareRestAPI
+        AdminTeamsPost:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /administration/teams/batchUpdate
+            Method: post
+            RestApiId:
+              Ref: MiddlewareRestAPI
+        AdminTeamDelete:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /administration/teams/{teamId}
+            Method: delete
+            RestApiId:
+              Ref: MiddlewareRestAPI
+        AdminInvalidateTeamMember:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /administration/teams/{teamId}/members/{memberId}/invalidate
+            Method: put
+            RestApiId:
+              Ref: MiddlewareRestAPI
+      Tags:
+        App: xxx
+  MiddlewareAdminClientRulesFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-admin-client-rules"
+      CodeUri: ./
+      Handler: api-handlers.adminClientRules
+      Role: !GetAtt MiddlewareAdminApiLambdaRole.Arn
+      Timeout: 120
+      Events:
+        AdminRulesGet:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /administration/rules
+            Method: get
+            RestApiId:
+              Ref: MiddlewareRestAPI
+        AdminRuleGet:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /administration/rules/{source}/{type}
+            Method: get
+            RestApiId:
+              Ref: MiddlewareRestAPI
+        AdminRuleEnable:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /administration/rules/{source}/{type}/enable/{enableValue}
+            Method: put
+            RestApiId:
+              Ref: MiddlewareRestAPI
+        AdminRuleEnableAll:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /administration/rules/{source}/enable/{enableValue}
+            Method: put
+            RestApiId:
+              Ref: MiddlewareRestAPI
+      Tags:
+        App: xxx
+  MiddlewareTeamActiveDaysSprintsFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-team-active-days"
+      CodeUri: ./
+      Handler: api-handlers.teamActiveDaysSprints
+      Role: !GetAtt MiddlewareApiLambdaRole.Arn
+      Events:
+        TeamActiveDaysSprints:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /stats-detail/github/team-active-days
+            Method: get
+            RestApiId:
+              Ref: MiddlewareRestAPI
+      Tags:
+        App: xxx
+  MiddlewareTeamActiveDaysWeeklyFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-team-active-days-weekly"
+      CodeUri: ./
+      Handler: api-handlers.teamActiveDaysWeekly
+      Role: !GetAtt MiddlewareApiLambdaRole.Arn
+      Events:
+        TeamActiveDaysWeekly:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /stats-detail/github/team-active-days/weekly
+            Method: get
+            RestApiId:
+              Ref: MiddlewareRestAPI
+      Tags:
+        App: xxx
+  MiddlewareTeamCommentsCountSprintsFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-team-comments-count"
+      CodeUri: ./
+      Handler: api-handlers.teamCommentsCountSprints
+      Role: !GetAtt MiddlewareApiLambdaRole.Arn
+      Events:
+        TeamCommentsCountSprints:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /stats-detail/github/team-comments-count
+            Method: get
+            RestApiId:
+              Ref: MiddlewareRestAPI
+      Tags:
+        App: xxx
+  MiddlewareTeamDetailJiraWeeklyFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-team-detail-jira-weekly"
+      CodeUri: ./
+      Handler: api-handlers.teamDetailJiraWeekly
+      Role: !GetAtt MiddlewareApiLambdaRole.Arn
+      Events:
+        TeamDetailJiraWeekly:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /team-detail/jira/weekly
+            Method: get
+            RestApiId:
+              Ref: MiddlewareRestAPI
+      Tags:
+        App: xxx
+  MiddlewareTeamCommentsCountWeeklyFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-team-comments-count-weekly"
+      CodeUri: ./
+      Handler: api-handlers.teamCommentsCountWeekly
+      Role: !GetAtt MiddlewareApiLambdaRole.Arn
+      Events:
+        TeamCommentsCountWeekly:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /stats-detail/github/team-comments-count/weekly
+            Method: get
+            RestApiId:
+              Ref: MiddlewareRestAPI
+      Tags:
+        App: xxx
+  MiddlewareTeamsStatsFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-teams-stats"
+      CodeUri: ./
+      Handler: api-handlers.teamsStats
+      Role: !GetAtt MiddlewareApiLambdaRole.Arn
+      Events:
+        TeamsStats:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /teams-stats
+            Method: get
+            RestApiId:
+              Ref: MiddlewareRestAPI
+      Tags:
+        App: xxx
+  MiddlewareTeamDetailJiraSprintsFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-team-detail-jira-sprints"
+      CodeUri: ./
+      Handler: api-handlers.teamDetailJiraSprints
+      Role: !GetAtt MiddlewareApiLambdaRole.Arn
+      Events:
+        TeamDetailJiraSprints:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /team-detail/jira
+            Method: get
+            RestApiId:
+              Ref: MiddlewareRestAPI
+      Tags:
+        App: xxx
+  MiddlewareTeamDetailJiraFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-team-detail-jira"
+      CodeUri: ./
+      Handler: api-handlers.teamDetailJira
+      Role: !GetAtt MiddlewareApiLambdaRole.Arn
+      Events:
+        TeamDetailJira:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /team-detail/jira/{statsName}/{granularity}
+            Method: get
+            RestApiId:
+              Ref: MiddlewareRestAPI
+      Tags:
+        App: xxx
+  MiddlewareTeamDetailGithubFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-team-detail-github"
+      CodeUri: ./
+      Handler: api-handlers.teamDetailGithub
+      Role: !GetAtt MiddlewareApiLambdaRole.Arn
+      Events:
+        TeamDetailGithub:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /team-detail/github/{statsName}/{granularity}
+            Method: get
+            RestApiId:
+              Ref: MiddlewareRestAPI
+      Tags:
+        App: xxx
+  MiddlewareTeamJiraSprintsFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-team-jira-sprints"
+      CodeUri: ./
+      Handler: api-handlers.teamJiraSprints
+      Role: !GetAtt MiddlewareApiLambdaRole.Arn
+      Events:
+        TeamJiraSprints:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /team-jira-sprints
+            Method: get
+            RestApiId:
+              Ref: MiddlewareRestAPI
+      Tags:
+        App: xxx
+  MiddlewareTeamVelocityFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-team-velocity"
+      CodeUri: ./
+      Handler: api-handlers.teamVelocity
+      Role: !GetAtt MiddlewareApiLambdaRole.Arn
+      Events:
+        TeamVelocityFunction:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /stats-detail/jira/team-velocity
+            Method: get
+            RestApiId:
+              Ref: MiddlewareRestAPI
+      Tags:
+        App: xxx
+  MiddlewareTeamCommitsSprintsFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-team-commits"
+      CodeUri: ./
+      Handler: api-handlers.teamCommitsSprints
+      Role: !GetAtt MiddlewareApiLambdaRole.Arn
+      Events:
+        TeamCommitsSprints:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /stats-detail/github/team-commits
+            Method: get
+            RestApiId:
+              Ref: MiddlewareRestAPI
+      Tags:
+        App: xxx
+  MiddlewareTeamCommitsWeeklyFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-team-commits-weekly"
+      CodeUri: ./
+      Handler: api-handlers.teamCommitsWeekly
+      Role: !GetAtt MiddlewareApiLambdaRole.Arn
+      Events:
+        TeamCommitsWeekly:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /stats-detail/github/team-commits/weekly
+            Method: get
+            RestApiId:
+              Ref: MiddlewareRestAPI
+      Tags:
+        App: xxx
+  MiddlewareTeamImpactSprintsFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-team-impact-sprints"
+      CodeUri: ./
+      Handler: api-handlers.teamImpactSprints
+      Role: !GetAtt MiddlewareApiLambdaRole.Arn
+      Events:
+        TeamImpactSprints:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /stats-detail/github/team-impact
+            Method: get
+            RestApiId:
+              Ref: MiddlewareRestAPI
+      Tags:
+        App: xxx
+  MiddlewareTeamImpactWeeklyFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-team-impact-weekly"
+      CodeUri: ./
+      Handler: api-handlers.teamImpactWeekly
+      Role: !GetAtt MiddlewareApiLambdaRole.Arn
+      Events:
+        TeamImpactWeekly:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /stats-detail/github/team-impact/weekly
+            Method: get
+            RestApiId:
+              Ref: MiddlewareRestAPI
+      Tags:
+        App: xxx
+  MiddlewareTeamCommitsWoPRWeeklyFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-team-commits-wo-pr-weekly"
+      CodeUri: ./
+      Handler: api-handlers.teamCommitsWoPRWeekly
+      Role: !GetAtt MiddlewareApiLambdaRole.Arn
+      Events:
+        TeamCommitsWoPRWeekly:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /stats-detail/github/team-commits-without-request/weekly
+            Method: get
+            RestApiId:
+              Ref: MiddlewareRestAPI
+      Tags:
+        App: xxx
+  MiddlewareTeamCommitsWoPRSprintsFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-team-commits-wo-pr-sprints"
+      CodeUri: ./
+      Handler: api-handlers.teamCommitsWoPRSprints
+      Role: !GetAtt MiddlewareApiLambdaRole.Arn
+      Events:
+        TeamCommitsWoPRSprints:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /stats-detail/github/team-commits-without-request
+            Method: get
+            RestApiId:
+              Ref: MiddlewareRestAPI
+      Tags:
+        App: xxx
+  MiddlewareOutstandingBugsWeeklyFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-outstanding-bugs-weekly"
+      CodeUri: ./
+      Handler: api-handlers.detailOutstandingBugsWeekly
+      Role: !GetAtt MiddlewareApiLambdaRole.Arn
+      Events:
+        DetailOutstandingBugsWeekly:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /stats-detail/jira/outstanding-bugs/weekly
+            Method: get
+            RestApiId:
+              Ref: MiddlewareRestAPI
+      Tags:
+        App: xxx
+  MiddlewareOutstandingBugsSprintsFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-outstanding-bugs-sprints"
+      CodeUri: ./
+      Handler: api-handlers.detailOutstandingBugsSprints
+      Role: !GetAtt MiddlewareApiLambdaRole.Arn
+      Events:
+        DetailOutstandingBugsSprints:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /stats-detail/jira/outstanding-bugs
+            Method: get
+            RestApiId:
+              Ref: MiddlewareRestAPI
+      Tags:
+        App: xxx
+  MiddlewareCodeQualityTeamRecentStatsFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-code-quality-team-recent-stats"
+      CodeUri: ./
+      Handler: api-handlers.codeQualityTeamRecentStats
+      Role: !GetAtt MiddlewareApiLambdaRole.Arn
+      Events:
+        CodeQualityTeamRecentStats:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /team-detail/code-quality/team-recent-stats
+            Method: get
+            RestApiId:
+              Ref: MiddlewareRestAPI
+      Tags:
+        App: xxx
+  CommonTablesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-resource-common-tables"
+      CodeUri: ./
+      Handler: custom-resource-handlers.commonTables
+      Role: !GetAtt MiddlewareAdminApiLambdaRole.Arn
+      Timeout: 300
+      Tags:
+        App: xxx
+  ClientTablesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-resource-client-tables"
+      CodeUri: ./
+      Handler: custom-resource-handlers.clientTables
+      Role: !GetAtt MiddlewareAdminApiLambdaRole.Arn
+      Timeout: 300
+      Tags:
+        App: xxx
+  ClientRulesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-resource-client-rules"
+      CodeUri: ./
+      Handler: custom-resource-handlers.clientRules
+      Role: !GetAtt MiddlewareAdminApiLambdaRole.Arn
+      Timeout: 300
+      Tags:
+        App: xxx
+  ClientTriggerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-table-clients-stream"
+      CodeUri: ./
+      Handler: trigger-handlers.clientTrigger
+      Role: !GetAtt MiddlewareAdminApiLambdaRole.Arn
+      Timeout: 300
+      Tags:
+        App: xxx
+  CommonTablesResource:
+    Type: AWS::CloudFormation::CustomResource
+    Properties:
+      ServiceToken: !GetAtt CommonTablesFunction.Arn
+      ResourceId: !Sub "${AWS::StackName}-common-tables-resource"
+      ResVersion: !Ref ResourceVersion
+      UpdateTables: '2020-11-27'
+    DependsOn: ClientTriggerFunction
+  ClientTablesResource:
+    Type: AWS::CloudFormation::CustomResource
+    Properties:
+      ServiceToken: !GetAtt ClientTablesFunction.Arn
+      ResourceId: !Sub "${AWS::StackName}-client-tables-resource"
+      ResVersion: !Ref ResourceVersion
+      UpdateTables: '2020-11-11'
+    DependsOn: CommonTablesResource
+  ClientRulesResource:
+    Type: AWS::CloudFormation::CustomResource
+    Properties:
+      ServiceToken: !GetAtt ClientRulesFunction.Arn
+      ResourceId: !Sub "${AWS::StackName}-client-rules-resource"
+      ResVersion: !Ref ResourceVersion
+      UpdateTables: '2020-11-11'
+    DependsOn: CommonTablesResource
+  MiddlewarePasswordExpiratorLambdaRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      RoleName: !Sub ${AWS::StackName}-password-expirator-lambda-role
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: DynamoScanPolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              Effect: Allow
+              Action:
+                - dynamodb:Scan
+              Resource:
+                - !Sub "arn:aws:dynamodb:*:*:table/xxx-${Stage}-clients"
+        - PolicyName: CognitoListUsersPolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              Effect: Allow
+              Action:
+                - cognito-idp:ListUsers
+                - cognito-idp:AdminResetUserPassword
+              Resource:
+                - !Ref CognitoPool
+      Tags:
+        - Key: App
+          Value: xxx
+  MiddlewarePasswordExpiratorFunction:
+      Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+      Properties:
+        FunctionName: !Sub "${AWS::StackName}-password-expirator"
+        CodeUri: ./
+        Environment:
+          Variables:
+            CognitoPoolArn: !Ref CognitoPool
+        Handler: job-handlers.passwordExpirator
+        Role: !GetAtt MiddlewarePasswordExpiratorLambdaRole.Arn
+        Events:
+          PasswordExpirator:
+            Type: Schedule # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+            Properties:
+              Description: Password expirator for cognito logins
+              Enabled: True
+              Schedule: 'cron(30 23 * * ? *)'
+  MiddlewareMemberInvalidatorLambdaRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      RoleName: !Sub ${AWS::StackName}-member-invalidator-lambda-role
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: DynamoReadWritePolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              Effect: Allow
+              Action:
+                - dynamodb:BatchGetItem
+                - dynamodb:GetItem
+                - dynamodb:BatchWriteItem
+                - dynamodb:PutItem
+                - dynamodb:DeleteItem
+                - dynamodb:UpdateItem
+                - dynamodb:Query
+                - dynamodb:Scan
+              Resource:
+                - !Sub "arn:aws:dynamodb:*:*:table/xxx-${Stage}-*-collector-queue*"
+                - !Sub "arn:aws:dynamodb:*:*:table/xxx-${Stage}-*-git-*"
+                - !Sub "arn:aws:dynamodb:*:*:table/xxx-${Stage}-*-jira-worklogs"
+                - !Sub "arn:aws:dynamodb:*:*:table/xxx-${Stage}-*-teams"
+                - !Sub "arn:aws:dynamodb:*:*:table/xxx-${Stage}-*-jira-worklogs/index/account-worklogs"
+      Tags:
+        - Key: App
+          Value: xxx
+  MemberInvalidatorCollectorFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-memberInvalidation-collector"
+      CodeUri: ./
+      Handler: job-handlers.memberInvalidator
+      Role: !GetAtt MiddlewareMemberInvalidatorLambdaRole.Arn
+      Timeout: 900
+      Tags:
+        App: xxx
+Outputs:
+  MiddlewareRestAPI:
+    Description: "API Gateway endpoint URL for middleware functions"
+    Value: !Sub "https://${MiddlewareRestAPI}.execute-api.${AWS::Region}.amazonaws.com/${Stage}"
+  MiddlewareManualStatsGetFunction:
+    Description: "Manual stats get Lambda Function ARN"
+    Value: !GetAtt MiddlewareManualStatsGetFunction.Arn
+  MiddlewareManualStatsPutFunction:
+    Description: "Manual stats put Lambda Function ARN"
+    Value: !GetAtt MiddlewareManualStatsPutFunction.Arn
+  MiddlewareManualStatsDeleteFunction:
+    Description: "Manual stats delete Lambda Function ARN"
+    Value: !GetAtt MiddlewareManualStatsDeleteFunction.Arn
+  MiddlewareManualStatsBacklogHealthFunction:
+    Description: "Manual stats backlog health Lambda Function ARN"
+    Value: !GetAtt MiddlewareManualStatsBacklogHealthFunction.Arn
+  MiddlewareManualStatsHappinessTrackingFunction:
+    Description: "Manual stats happiness tracking Lambda Function ARN"
+    Value: !GetAtt MiddlewareManualStatsHappinessTrackingFunction.Arn
+  MiddlewareManualStatsHappinessTrackingDetailFunction:
+    Description: "Manual stats happiness tracking detail Lambda Function ARN"
+    Value: !GetAtt MiddlewareManualStatsHappinessTrackingDetailFunction.Arn
+  MiddlewareTeamDetailGithubSprintsFunction:
+    Description: "Github Team detail sprints Lambda Function ARN"
+    Value: !GetAtt MiddlewareTeamDetailGithubSprintsFunction.Arn
+  MiddlewareTeamDetailGithubWeeklyFunction:
+    Description: "Github Team detail weekly Lambda Function ARN"
+    Value: !GetAtt MiddlewareTeamDetailGithubWeeklyFunction.Arn
+  MiddlewareTeamDetailGithubFunction:
+    Description: "Github Team detail Lambda Function ARN"
+    Value: !GetAtt MiddlewareTeamDetailGithubFunction.Arn
+  MiddlewareClientSettingsFunction:
+    Description: "Client settings get Lambda Function ARN"
+    Value: !GetAtt MiddlewareClientSettingsFunction.Arn
+  MiddlewareSuperAdminClientsFunction:
+    Description: "Client administration Lambda Function ARN"
+    Value: !GetAtt MiddlewareSuperAdminClientsFunction.Arn
+  MiddlewareSuperAdminTeamsFunction:
+    Description: "Teams administration Lambda Function ARN"
+    Value: !GetAtt MiddlewareSuperAdminTeamsFunction.Arn
+  MiddlewareSuperAdminClientRulesFunction:
+    Description: "Middleware client rules administration Lambda Function ARN"
+    Value: !GetAtt MiddlewareSuperAdminClientRulesFunction.Arn
+  MiddlewareSuperAdminClientTablesFunction:
+    Description: "Middleware client tables administration Lambda Function ARN"
+    Value: !GetAtt MiddlewareSuperAdminClientTablesFunction.Arn
+  MiddlewareAdminTeamsFunction:
+    Description: "Teams administration Lambda Function ARN"
+    Value: !GetAtt MiddlewareAdminTeamsFunction.Arn
+  MiddlewareAdminClientRulesFunction:
+    Description: "Middleware client rules administration Lambda Function ARN"
+    Value: !GetAtt MiddlewareAdminClientRulesFunction.Arn
+  MiddlewareTeamDetailJiraSprintsFunction:
+    Description: "Team Detail Jira Lambda Function ARN"
+    Value: !GetAtt MiddlewareTeamDetailJiraSprintsFunction.Arn
+  MiddlewareTeamDetailJiraWeeklyFunction:
+    Description: "Jira Team Detail weekly Lambda Function ARN"
+    Value: !GetAtt MiddlewareTeamDetailJiraWeeklyFunction.Arn
+  MiddlewareTeamDetailJiraFunction:
+    Description: "Jira Team Detail Lambda Function ARN"
+    Value: !GetAtt MiddlewareTeamDetailJiraFunction.Arn
+  MiddlewareTeamActiveDaysSprintsFunction:
+    Description: "Github Statistics Detail of Team Active Days for sprints Lambda Function ARN"
+    Value: !GetAtt MiddlewareTeamActiveDaysSprintsFunction.Arn
+  MiddlewareTeamActiveDaysWeeklyFunction:
+    Description: "Github Statistics Detail of Team Active Days for weeks Lambda Function ARN"
+    Value: !GetAtt MiddlewareTeamActiveDaysWeeklyFunction.Arn
+  MiddlewareTeamCommentsCountSprintsFunction:
+    Description: "Github Statistics Detail of Team Comments Count for sprints Lambda Function ARN"
+    Value: !GetAtt MiddlewareTeamCommentsCountSprintsFunction.Arn
+  MiddlewareTeamCommentsCountWeeklyFunction:
+    Description: "Github Statistics Detail of Team Comments Count for weeks Lambda Function ARN"
+    Value: !GetAtt MiddlewareTeamCommentsCountWeeklyFunction.Arn
+  MiddlewareTeamsStatsFunction:
+    Description: "Teams stats Lambda Function ARN"
+    Value: !GetAtt MiddlewareTeamsStatsFunction.Arn
+  MiddlewareTeamJiraSprintsFunction:
+    Description: "Team Jira Sprints Lambda Function ARN"
+    Value: !GetAtt MiddlewareTeamJiraSprintsFunction.Arn
+  MiddlewareTeamVelocityFunction:
+    Description: "Jira Statistics Detail of Team Velocity for sprints Lambda Function ARN"
+    Value: !GetAtt MiddlewareTeamVelocityFunction.Arn
+  MiddlewareTeamCommitsSprintsFunction:
+    Description: "Github Statistics Detail of Team Commits for sprints Lambda Function ARN"
+    Value: !GetAtt MiddlewareTeamCommitsSprintsFunction.Arn
+  MiddlewareTeamCommitsWeeklyFunction:
+    Description: "Github Statistics Detail of Team Commits for weeks Lambda Function ARN"
+    Value: !GetAtt MiddlewareTeamCommitsWeeklyFunction.Arn
+  MiddlewareTeamImpactSprintsFunction:
+    Description: "Github Statistics Detail of Team Impact for sprints Lambda Function ARN"
+    Value: !GetAtt MiddlewareTeamImpactSprintsFunction.Arn
+  MiddlewareTeamImpactWeeklyFunction:
+    Description: "Github Statistics Detail of Team Impact for weeks Lambda Function ARN"
+    Value: !GetAtt MiddlewareTeamImpactWeeklyFunction.Arn
+  MiddlewareTeamCommitsWoPRWeeklyFunction:
+    Description: "Github Statistics Detail of Team Commits without PR for weeks Lambda Function ARN"
+    Value: !GetAtt MiddlewareTeamCommitsWoPRWeeklyFunction.Arn
+  MiddlewareTeamCommitsWoPRSprintsFunction:
+    Description: "Github Statistics Detail of Team Commits without PR for sprints Lambda Function ARN"
+    Value: !GetAtt MiddlewareTeamCommitsWoPRSprintsFunction.Arn
+  MiddlewareCodeQualityTeamRecentStatsFunction:
+    Description: "Code quality team recent statistics Lambda Function ARN"
+    Value: !GetAtt MiddlewareCodeQualityTeamRecentStatsFunction.Arn
+  MiddlewarePasswordExpiratorFunction:
+    Description: "Password expirator Lambda function ARN"
+    Value: !GetAtt MiddlewarePasswordExpiratorFunction.Arn
+  MemberInvalidatorCollectorFunction:
+    Description: "Member invalidator collector Lambda function ARN"
+    Value: !GetAtt MemberInvalidatorCollectorFunction.Arn
+  MiddlewareOutstandingBugsWeeklyFunction:
+    Description: "Jira Statistics Detail of Team Outstanding bugs for weeks Lambda function ARN"
+    Value: !GetAtt MiddlewareOutstandingBugsWeeklyFunction.Arn
+  MiddlewareOutstandingBugsSprintsFunction:
+    Description: "Jira Statistics Detail of Team Outstanding bugs for sprints Lambda function ARN"
+    Value: !GetAtt MiddlewareOutstandingBugsSprintsFunction.Arn
