@@ -1,0 +1,78 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "appServicePlan_name": {
+      "type": "string",
+      "metadata": {
+        "description": "SPA app service plan name"
+      }
+    },
+    "sku": {
+      "type": "string",
+      "metadata": {
+        "description": "The SKU of App Service Plan."
+      }
+    },
+    "appInsightsName": {
+      "type": "string",
+      "metadata": {
+        "description": "SPA application insights resource name"
+      }
+    },
+    "sites_name": {
+      "type": "string",
+      "metadata": {
+        "description": "Site name"
+      }
+    }
+  },
+  "functions": [],
+  "variables": {
+    "apiApplicationInsightsSettings": {
+      "apiVersion": "2015-05-01"
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Web/serverfarms",
+      "apiVersion": "2018-02-01",
+      "name": "[parameters('appServicePlan_name')]",
+      "location": "[resourceGroup().location]",
+      "sku": {
+        "name": "[parameters('sku')]"
+      },
+      "kind": "app",
+      "properties": {}
+    },
+    {
+      "apiVersion": "[variables('apiApplicationInsightsSettings').apiVersion]",
+      "name": "[parameters('appInsightsName')]",
+      "type": "Microsoft.Insights/components",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "applicationId": "[parameters('appInsightsName')]",
+        "Application_Type": "web"
+      }
+    },
+    {
+      "name": "[parameters('sites_name')]",
+      "type": "Microsoft.Web/sites",
+      "apiVersion": "2018-11-01",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/serverfarms', parameters('appServicePlan_name'))]"
+      ],
+      "kind": "app",
+      "properties": {
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', parameters('appServicePlan_name'))]"
+      }
+    }
+  ],
+  "outputs": {
+    "app_insights_instrumentation_key": {
+      "value": "[reference(concat('microsoft.insights/components/', parameters('appInsightsName')), variables('apiApplicationInsightsSettings').apiVersion).InstrumentationKey]",
+      "type": "string"
+    }
+  }
+}
