@@ -33,8 +33,8 @@ For relaxed environment for presenters we decided we will not be releasing recor
 | [Vue 3 overview](https://github.com/DevelopersVismaKosice/CodeAndCoffee/tree/master/sessions/13-Vue%203%20Overview/) | 12 Feb 2021 | Matúš Makatura |
 | [Did you know? C# Interactive #2](https://github.com/DevelopersVismaKosice/CodeAndCoffee/tree/master/sessions/14-Did%20you%20know%20%232%20-%20C%23/src) | 12 April 2021 | Michal Lukac |
 | [IasC - Terraform (vs. CloudFormation vs. ARM)](https://github.com/DevelopersVismaKosice/CodeAndCoffee/tree/master/sessions/15-IasC-Terraform-CloudFormation-Arm/) | 14 May 2021 | Lubos Olejar |
-| [AWS CDK)](https://github.com/DevelopersVismaKosice/CodeAndCoffee/tree/master/sessions/15-Aws%20CDK/) | 14 Sept 2021 | Harun Celjo |
-| [Concurrency in Swift 5.5)](https://github.com/DevelopersVismaKosice/CodeAndCoffee/tree/master/sessions/17-Concurrency%20in%20Swift%205.5/) | 29 Sept 2021 | Michal Melich |
+| [AWS CDK](https://github.com/DevelopersVismaKosice/CodeAndCoffee/tree/master/sessions/15-Aws%20CDK/) | 14 Sept 2021 | Harun Celjo |
+| [Concurrency in Swift 5.5](https://github.com/DevelopersVismaKosice/CodeAndCoffee/tree/master/sessions/17-Concurrency%20in%20Swift%205.5/) | 29 Sept 2021 | Michal Melich |
 
 ### Enjoy :)
 
