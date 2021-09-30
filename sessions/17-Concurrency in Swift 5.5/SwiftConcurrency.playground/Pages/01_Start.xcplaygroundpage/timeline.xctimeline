@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Timeline
+   version = "3.0">
+   <TimelineItems>
+      <LoggerValueHistoryTimelineItem
+         documentLocation = "file:///Users/michal.melich/dev/SwiftConcurrency.playground/Pages/01_Start.xcplaygroundpage#CharacterRangeLen=19&amp;CharacterRangeLoc=310&amp;EndingColumnNumber=0&amp;EndingLineNumber=19&amp;StartingColumnNumber=0&amp;StartingLineNumber=17&amp;Timestamp=654675359.325807"
+         lockedSize = "{886, 55}"
+         selectedRepresentationIndex = "0"
+         shouldTrackSuperviewWidth = "NO">
+      </LoggerValueHistoryTimelineItem>
+      <LoggerValueHistoryTimelineItem
+         documentLocation = "file:///Users/michal.melich/dev/SwiftConcurrency.playground/Pages/01_Start.xcplaygroundpage#CharacterRangeLen=19&amp;CharacterRangeLoc=310&amp;EndingColumnNumber=0&amp;EndingLineNumber=19&amp;StartingColumnNumber=0&amp;StartingLineNumber=17&amp;Timestamp=654675359.3259749"
+         selectedRepresentationIndex = "0"
+         shouldTrackSuperviewWidth = "NO">
+      </LoggerValueHistoryTimelineItem>
+      <LoggerValueHistoryTimelineItem
+         documentLocation = "file:///Users/michal.melich/dev/SwiftConcurrency.playground/Pages/01_Start.xcplaygroundpage#CharacterRangeLen=19&amp;CharacterRangeLoc=310&amp;EndingColumnNumber=0&amp;EndingLineNumber=19&amp;StartingColumnNumber=0&amp;StartingLineNumber=17&amp;Timestamp=654675359.326079"
+         selectedRepresentationIndex = "0"
+         shouldTrackSuperviewWidth = "NO">
+      </LoggerValueHistoryTimelineItem>
+      <LoggerValueHistoryTimelineItem
+         documentLocation = "file:///Users/michal.melich/dev/SwiftConcurrency.playground/Pages/01_Start.xcplaygroundpage#CharacterRangeLen=19&amp;CharacterRangeLoc=310&amp;EndingColumnNumber=0&amp;EndingLineNumber=19&amp;StartingColumnNumber=0&amp;StartingLineNumber=17&amp;Timestamp=654675359.326202"
+         lockedSize = "{453, 111}"
+         selectedRepresentationIndex = "0"
+         shouldTrackSuperviewWidth = "NO">
+      </LoggerValueHistoryTimelineItem>
+   </TimelineItems>
+</Timeline>

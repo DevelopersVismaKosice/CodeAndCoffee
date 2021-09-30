@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<playground version='6.0' target-platform='ios' display-mode='rendered' buildActiveScheme='true' importAppTypes='true'>
+    <pages>
+        <page name='01_Start'/>
+        <page name='02_BlockBasedAPI'/>
+        <page name='03_AsyncAwait'/>
+        <page name='04_AsyncSequences'/>
+        <page name='05_ParallelExecution'/>
+        <page name='06_TasksAndTaskGroups'/>
+        <page name='07_Actors'/>
+        <page name='08_MainActor'/>
+    </pages>
+</playground>
