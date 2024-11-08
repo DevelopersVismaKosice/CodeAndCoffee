@@ -18,7 +18,7 @@ For relaxed environment for presenters we decided we will not be releasing recor
 
 | Session | Date | Presenter |
 |--------------|----------|--------------|
-| [High Performance C#](https://github.com/DevelopersVismaKosice/CodeAndCoffee/tree/master/sessions/1-High%20Performance%20C#) | 11 Nov 2024 | Stefan Panko |
+| [High Performance C#](https://github.com/DevelopersVismaKosice/CodeAndCoffee/tree/master/sessions/1-High%20Performance%20C%23) | 11 Nov 2024 | Stefan Panko |
 |  |  |  |
 |  |  |  |
 
