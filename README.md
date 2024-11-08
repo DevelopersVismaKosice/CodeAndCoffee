@@ -1,4 +1,6 @@
-![logo.png](docs/images/codeAndCoffeeReboot.jpg)
+<p align="center">
+  <img src="docs/images/codeAndCoffeeReboot-small.jpg" />
+</p>
 
 # by Developers at Visma Kosice
 
