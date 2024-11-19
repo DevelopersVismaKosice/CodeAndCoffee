@@ -19,8 +19,9 @@ For relaxed environment for presenters we decided we will not be releasing recor
 | Session | Date | Presenter |
 |--------------|----------|--------------|
 | [High Performance C#](https://github.com/DevelopersVismaKosice/CodeAndCoffee/tree/master/sessions/1-High%20Performance%20C%23) | 11 Nov 2024 | Stefan Panko |
-|  |  |  |
-|  |  |  |
+| [Docusaurus](https://github.com/DevelopersVismaKosice/CodeAndCoffee/tree/master/sessions/2-Docusaurus) | 15 Nov 2024 | Branislav Bednar |
+| UPCOMING [Dive into Async in .NET] | 22 Nov 2024 | Erik Hajsak Vojtko |
+| UPCOMING [Open Telemetry] | TBD | Michal Lukac |
 
 ### Enjoy :)
 
